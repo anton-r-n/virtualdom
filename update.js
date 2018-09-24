@@ -13,10 +13,10 @@
  *   nodes:  any,              // specs for child nodes
  * }
  *
- * Also `spec` can be plain object with field 'widget':
+ * Also `spec` can be an object with field 'widget':
  * {
  *   widget: 'Foo', // widget name will be casted to string
- *   ...            // other fields are optional and specific for widget
+ *   ...  // other fields are optional and specific for each widget
  * }
  * By convention widget name must start with capital letter A-Z.
  * Function with corresponding name must be defined in namespace `$`.
@@ -26,105 +26,81 @@
  */
 
 (function(w) {
-  var $ = w.$ = w.$ || {};
-  var d = w.document;
+  var $ = w.$ = w.$ || {}, d = w.document, _;
+
   $.update = update;
   $.arr = arr;
   $.obj = obj;
 
   /* Any to array */
-  function arr(a) {return Array.isArray(a) ? a : a == null ? [] : [a]}
+  function arr(a) { return Array.isArray(a) ? a : a == null ? [] : [a] }
 
   /* Any to object */
-  function obj(o) {return o == null ? {} : o}
+  function obj(o) { return o == null ? {} : o }
 
   /* Fall back option for non existent widgets */
-  function error(model) {w.console.error('Widget not found', model)}
+  function error(model) { w.console.error('Widget not found', model) }
 
-  /* Update or create node from spec */
+  /* Handle callback or empty spec */
   function update(spec, node, callback) {
-    if (typeof callback === 'function') {
-      w.setTimeout(callback, 0);
-    }
-    if (spec == null) {
-      return text('', node);
-    }
-    var wn = '' + spec.widget;
-    if (wn[0] >= 'A' && wn[0] <= 'Z') {
-      return spec.__ref = update(($[wn] || error)(spec), node);
-    }
-    if (spec.name) {
-      return updateNode(spec, node);
-    }
-    return text('' + spec, node);
-  };
+    if (typeof callback === 'function') w.setTimeout(callback, 0);
+    return spec == null ?
+        textNode('', node) : handleWidget(spec, node, '' + spec.widget);
+  }
 
+  /* Handle cases when spec is widget or tag ot text */
+  function handleWidget(spec, node, wn) {
+    return wn[0] >= 'A' && wn[0] <= 'Z' ?
+        spec.__ref = update(($[wn] || error)(spec), node) :
+        spec.name ? updateNode(spec, node) : textNode('' + spec, node);
+  }
+
+  /* Process node, attributes, properties, etc. */
   function updateNode(next, node) {
-    var prev = {};
-    var nodeName = ('' + next.name).toLowerCase();
-
-    if (node && (node.nodeName.toLowerCase() === nodeName)) {
-      prev = $.obj(node.__spec);
-    } else {
-      node = next.xmlns ?
-          d.createElementNS(next.xmlns, nodeName) :
-          d.createElement(nodeName);
-    }
-
-    attributes(node, obj(next.attrs), obj(prev.attrs));
-    childNodes(node, arr(next.nodes), node.childNodes);
-    properties(node, obj(next.props), obj(prev.props));
-    nodeEvents(node, obj(next.events), obj(prev.events));
-    node.__spec = next;
+    node = getOrCreate(next, node, ('' + next.name).toLowerCase());
+    updateProps(node, next, obj(node.__spec));
     return node;
-  };
-
-  function attributes(elt, nextAttrs, prevAttrs) {
-    var name;
-    for (name in prevAttrs) if (nextAttrs[name] === void 0) {
-      elt.removeAttribute(name);
-    }
-    for (name in nextAttrs) if (nextAttrs[name] !== prevAttrs[name]) {
-      elt.setAttribute(name, nextAttrs[name]);
-    }
   }
 
-  function properties(elt, nextProps, prevProps) {
-    var name;
-    for (name in prevProps) if (nextProps[name] === void 0) {
-      elt[name] = null;
-    }
-    for (name in nextProps) {
-      elt[name] = nextProps[name];
-    }
+  /* Create a new node with nodeName or return existent node */
+  function getOrCreate(spec, node, nn) {
+    return node && (node.nodeName.toLowerCase() === nn) ? node :
+        spec.xmlns ? d.createElementNS(spec.xmlns, nn) : d.createElement(nn);
   }
 
-  function nodeEvents(elt, nextEvents, prevEvents) {
-    var name;
-    for (name in prevEvents) if (nextEvents[name] !== prevEvents[name]) {
-      elt.removeEventListener(name, prevEvents[name]);
-    }
-    for (name in nextEvents) if (nextEvents[name] !== prevEvents[name]) {
-      elt.addEventListener(name, nextEvents[name]);
-    }
+  function updateProps(e, n, p) {
+    attrs(e, obj(n.attrs), obj(p.attrs));
+    nodes(e, arr(n.nodes), e.childNodes);
+    props(e, obj(n.props), obj(p.props));
+    events(e, obj(n.events), obj(p.events));
+    e.__spec = n;
   }
 
-  function childNodes(elt, nextNodes, nodes) {
-    var i, node;
-    for (i = 0; i < nextNodes.length; i++) {
-      node = update(nextNodes[i], nodes[i]);
-      if (node !== nodes[i]) elt.insertBefore(node, nodes[i]);
-    }
-    while (nodes[i]) {
-      elt.removeChild(nodes[i]);
-    }
+  function attrs(e, n, p, k) {
+    for (k in p) { if (n[k] === _) e.removeAttribute(k) }
+    for (k in n) { if (n[k] !== p[k]) e.setAttribute(k, n[k]) }
   }
 
-  function text(str, node) {
-    if (node && node.nodeType === 3) {
-      if (node.nodeValue !== str) node.nodeValue = str;
-      return node;
+  function props(e, n, p, k) {
+    for (k in p) { if (n[k] === _) e[k] = null }
+    for (k in n) { if (n[k] !== p[k]) e[k] = n[k] }
+  }
+
+  function events(e, n, p, k) {
+    for (k in p) { if (n[k] !== p[k]) e.removeEventListener(k, p[k]) }
+    for (k in n) { if (n[k] !== p[k]) e.addEventListener(k, n[k]) }
+  }
+
+  function nodes(e, n, p, nn, i) {
+    for (i = 0; i < n.length; i++) {
+      nn = update(n[i], p[i]);
+      if (nn !== p[i]) e.insertBefore(nn, p[i]);
     }
-    return d.createTextNode(str);
+    while (p[i]) e.removeChild(p[i]);
+  }
+
+  function textNode(v, n) {
+    return n && n.nodeType === 3 ?
+        (n.nodeValue !== v && (n.nodeValue = v), n) : d.createTextNode(v);
   }
 })(this);
