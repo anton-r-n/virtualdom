@@ -14,7 +14,6 @@
   };
 
   $.TodoWidget = function(model) {
-    model = $.obj(model);
     model.data = $.arr(model.data);
 
     /* This function doesn't need any binding because it is defined
@@ -68,7 +67,7 @@
     };
   };
 
-  /* This function is pure so we can put definintion out of TodoWidget. */
+  /* This function is pure so we can put the declaration out of TodoWidget. */
   function item(task, idx) {
     task = $.obj(task);
     return {

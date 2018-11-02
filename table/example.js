@@ -33,8 +33,6 @@
 
   /* Widget `Table` */
   $.Table = function(model) {
-    model = $.obj(model);
-
     /* Create data for nested widgets */
     var nodes = $.arr(model.data).map(function(row) {
       return {widget: 'TableRow', data: row};
@@ -45,8 +43,6 @@
 
   /* Widget `TableRow` */
   $.TableRow = function(model) {
-    model = $.obj(model);
-
     var nodes = $.arr(model.data).map(function(cell) {
       return {name: 'td', nodes: cell};
     });
