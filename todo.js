@@ -10,7 +10,7 @@
    * Other fields are optional and may vary depend of data nature.
    */
   var todoModel = {
-    widget: 'WidgetTodoApp',
+    widget: 'TodoApp',
     header: 'Todo App',
     data: [
       {title: 'Create repo', done: true},
@@ -21,25 +21,25 @@
   };
 
   /**
-   * WidgetTodoApp returns HTMLDivElement with class 'Todo' and two child
+   * TodoApp returns HTMLDivElement with class 'Todo' and two child
    * nodes. Each of the child-nodes is another widget.
    */
-  $.WidgetTodoApp = function(model) {
+  $.TodoApp = function(model) {
     return {
       name: 'div',
       attrs: {'class': 'Todo'},
       nodes: [
-        {widget: 'WidgetHeader', content: model.header},
-        {widget: 'WidgetForm', tasks: model.data},
+        {widget: 'Header', content: model.header},
+        {widget: 'Form', tasks: model.data},
       ],
     };
   };
 
   /**
-   * WidgetHeader returns HTMLSectionHeading element with one child.
+   * Header returns HTMLSectionHeading element with one child.
    * The child is TextNode with content
    */
-  $.WidgetHeader = function(model) {
+  $.Header = function(model) {
     return {
       name: 'h1',
       nodes: model.content,
@@ -47,11 +47,11 @@
   };
 
   /**
-   * WidgetForm returns HTMLForm element with event listener and two child
-   * nodes: HTMLInputElement and WidgetTaskList. The form element has event
+   * Form returns HTMLForm element with event listener and two child
+   * nodes: HTMLInputElement and TaskList. The form element has event
    * listener for the submit event which adds new item to the tasks list.
    */
-  $.WidgetForm = function(model) {
+  $.Form = function(model) {
     function submit(e) {
       e.preventDefault();
       var input = e.target.querySelector('input');
@@ -62,10 +62,11 @@
         $.direct(model.__ref, model);
         /* Clean up input field */
         input.value = '';
+        input.focus();
       }
     }
     var input = {name: 'input', attrs: {placeholder: 'Add task'}};
-    var tasks = {widget: 'WidgetTaskList', tasks: model.tasks};
+    var tasks = {widget: 'TaskList', tasks: model.tasks};
     return {
       name: 'form',
       nodes: [input, tasks],
@@ -74,23 +75,23 @@
   };
 
   /**
-   * WidgetTaskList maps tasks to models for WidgetTask and returns
+   * TaskList maps tasks to models for Task and returns
    * HTMLOrderedList element.
    */
-  $.WidgetTaskList = function(model) {
+  $.TaskList = function(model) {
     var nodes = model.tasks.map(
       function(task) {
-        return {widget: 'WidgetTask', data: task};
+        return {widget: 'Task', data: task};
       }
     );
     return {name: 'ol', nodes: nodes};
   };
 
   /**
-   * WidgetTask returns HTMLListItem element with attached event listener.
+   * Task returns HTMLListItem element with attached event listener.
    * The listener handles `click` event and toggles state of the task.
    */
-  $.WidgetTask = function(model) {
+  $.Task = function(model) {
     function click(e) {
       e.preventDefault();
       model.data.done = !model.data.done;
@@ -108,7 +109,7 @@
 
   /* Select the root node for our application */
   var root = w.document.querySelector('.Todo');
- 
+
   /* Start the application */
   $.direct(root, todoModel);
 })(this);
