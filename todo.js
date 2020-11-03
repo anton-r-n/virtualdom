@@ -62,7 +62,6 @@
         $.direct(model.__ref, model);
         /* Clean up input field */
         input.value = '';
-        input.focus();
       }
     }
     var input = {name: 'input', attrs: {placeholder: 'Add task'}};
@@ -98,11 +97,10 @@
       $.direct(model.__ref, model);
     }
     var task = model.data;
-    var cls = task.done ? 'done': '';
     return {
       name: 'li',
       nodes: task.title,
-      attrs: {class: cls},
+      attrs: {class: task.done ? 'done': ''},
       events: {click: click},
     };
   };
