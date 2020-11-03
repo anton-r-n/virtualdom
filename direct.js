@@ -7,60 +7,58 @@
   /* Export */
   $.direct = direct;
 
-  /* Render elt recursively according to spec */
+  /* Entry point */
   function direct(elt, spec, fn) {
-    elt = elt || 1;
-    if (typeof fn === 'function') callback(fn);
-    if (!spec) return text(elt, '');
-    if (spec.widget) return widget(elt, spec);
-    if (spec.name) return update(elt, spec, elt.__spec || 1);
-    return text(elt, spec);
+    if (typeof fn === 'function')
+      w.setTimeout(function() { d.body.clientWidth, fn() });
+    return replace(elt, element(elt || 1, spec == null ? '' : spec));
   }
 
-  /* Call fn after rendering is done */
-  function callback(fn) {
-    w.setTimeout(function() {d.body.clientWidth, fn()});
+  /* Render widget, node, or text */
+  function element(elt, spec) {
+    return (spec.widget ? widget : spec.name ? node : text)(elt, spec);
   }
 
-  /* Handle cases when spec is widget */
+  /* Handle case when spec is widget */
   function widget(elt, spec) {
     return (spec.__ref = direct(elt, ($[spec.widget] || err)(spec)));
   }
 
-  /* Skip update if next spect is prev spec */
-  function update(elt, next, prev) {
-    return next === prev ? elt : element(elt, next, prev);
+  /* Render node recursively */
+  function node(elt, spec) {
+    elt = reuse(elt, spec, elt.__spec || 1);
+    return (elt.__spec === spec) ? elt : update(elt, spec, elt.__spec || 1);
   }
 
-  /* Render element node */
-  function element(elt, next, prev) {
-    elt = reuse(elt, next, prev);
+  /* Verify if we can reuse the elt DOM node */
+  function reuse(elt, next, prev, name, reuse) {
+    name = (elt.nodeName || '').toLowerCase();
+    reuse = next.xmlns === prev.xmlns && next.name === name;
+    return reuse ? elt : create(next.name, next.xmlns);
+  }
+
+  /* Create and replace elt node */
+  function create(name, ns) {
+    return ns ? d.createElementNS(ns, name) : d.createElement(name);
+  }
+
+  /* Update elt recursively */
+  function update(elt, next, prev) {
     nodes(elt, arr(next.nodes), elt.childNodes);
     attrs(elt, next.attrs || 1, prev.attrs || 1);
     props(elt, next.props || 1, prev.props || 1);
     events(elt, next.events || 1, prev.events || 1);
-    elt.__spec = next;
-    return (next.__ref = elt);
-  }
-
-  /* Create or replace elt node */
-  function reuse(elt, next, prev) {
-    var name = (elt.nodeName || '').toLowerCase();
-    var reuse = next.xmlns === prev.xmlns && next.name === name;
-    return reuse ? elt : create(elt, next.name, next.xmlns);
-  }
-
-  /* Create and replace elt node */
-  function create(elt, name, ns) {
-    var e = ns ? d.createElementNS(ns, name) : d.createElement(name);
-    return elt && elt.parentNode && elt.parentNode.replaceChild(e, elt), e;
+    return (elt.__spec = next, next.__ref = elt);
   }
 
   /* Update child nodes */
   function nodes(elt, n, p, k) {
-    for (k = 0; k < n.length; k++) elt.insertBefore(direct(p[k], n[k]), p[k]);
+    for (k = 0; k < n.length; k++) insert(elt, direct(p[k], n[k]), p[k]);
     while (p[k]) elt.removeChild(p[k]);
   }
+
+  /* Insert node */
+  function insert(elt, n0, n1) { if (n0 !== n1) elt.insertBefore(n0, n1) }
 
   /* Update elt attrbutes */
   function attrs(elt, n, p, k) {
@@ -80,16 +78,20 @@
     for (k in n) if (n[k] !== p[k]) elt.addEventListener(k, n[k]);
   }
 
-  /* Update or create a DOM TextNode with the value */
+  /* Update or create a DOM TextNode with the value `v` */
   function text(elt, v) {
-    return elt && elt.nodeType === 3
-      ? (elt.nodeValue !== v && (elt.nodeValue = v), elt)
-      : d.createTextNode(v);
+    elt = elt.nodeType === 3 ? elt : d.createTextNode(v);
+    return elt.nodeValue !== v && (elt.nodeValue = v), elt;
   }
 
   /* Any to array */
-  function arr(a) { return a ? (Array.isArray(a) ? a : [a]) : 1 }
+  function arr(a) { return a == null ? 1 : (Array.isArray(a) ? a : [a]) }
 
-  /* Handles non existent widgets */
+  /* Replace the element if necessary */
+  function replace(p, n, pn) {
+    return p && (p !== n) && (pn = p.parentNode) && pn.replaceChild(n, p), n;
+  }
+
+  /* Handle missing widgets */
   function err(model) { w.console.error('Widget not found', model) }
 })(this);
