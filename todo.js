@@ -3,6 +3,7 @@
 (function(w) {
   /* Namespace */
   var $ = w.$ = w.$ || {};
+  var _;
 
   /**
    * Model is plain object.
@@ -25,25 +26,10 @@
    * nodes. Each of the child-nodes is another widget.
    */
   $.TodoApp = function(model) {
-    return {
-      name: 'div',
-      attrs: {'class': 'Todo'},
-      nodes: [
-        {widget: 'Header', content: model.header},
-        {widget: 'Form', tasks: model.data},
-      ],
-    };
-  };
-
-  /**
-   * Header returns HTMLSectionHeading element with one child.
-   * The child is TextNode with content
-   */
-  $.Header = function(model) {
-    return {
-      name: 'h1',
-      nodes: model.content,
-    };
+    return ['div', 'Todo', [
+      ['h1', _, model.header],
+      {widget: 'Form', tasks: model.data},
+    ]];
   };
 
   /**
@@ -64,27 +50,12 @@
         input.value = '';
       }
     }
-    var input = {name: 'input', attrs: {placeholder: 'Add task'}};
-    var tasks = {widget: 'TaskList', tasks: model.tasks};
-    return {
-      name: 'form',
-      nodes: [input, tasks],
-      events: {submit: submit},
-    };
+    var input = ['input', {placeholder: 'Add task'}];
+    var tasks = ['ol', _, model.tasks.map(task)];
+    return ['form', _, [input, tasks], _, {submit: submit}];
   };
 
-  /**
-   * TaskList maps tasks to models for Task and returns
-   * HTMLOrderedList element.
-   */
-  $.TaskList = function(model) {
-    var nodes = model.tasks.map(
-      function(task) {
-        return {widget: 'Task', data: task};
-      }
-    );
-    return {name: 'ol', nodes: nodes};
-  };
+  function task(content) {return {widget: 'Task', data: content}}
 
   /**
    * Task returns HTMLListItem element with attached event listener.
@@ -97,12 +68,7 @@
       $.direct(model.__ref, model);
     }
     var task = model.data;
-    return {
-      name: 'li',
-      nodes: task.title,
-      attrs: {class: task.done ? 'done': ''},
-      events: {click: click},
-    };
+    return ['li', task.done ? 'done': '', task.title, _, {click: click}];
   };
 
   /* Select the root node for our application */

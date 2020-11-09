@@ -15,8 +15,8 @@
   }
 
   /* Render widget, node, or text */
-  function element(elt, spec) {
-    return (spec.widget ? widget : spec.name ? node : text)(elt, spec);
+  function element(e, s) {
+    return (s.widget ? widget : Array.isArray(s) ? node : text)(e, s);
   }
 
   /* Handle case when spec is widget */
@@ -33,8 +33,8 @@
   /* Verify if we can reuse the elt DOM node */
   function reuse(elt, next, prev, name, reuse) {
     name = (elt.nodeName || '').toLowerCase();
-    reuse = next.xmlns === prev.xmlns && next.name === name;
-    return reuse ? elt : create(next.name, next.xmlns);
+    reuse = next[5] === prev[5] && next[0] === name;
+    return reuse ? elt : create(next[0], next[5]);
   }
 
   /* Create and replace elt node */
@@ -44,11 +44,12 @@
 
   /* Update elt recursively */
   function update(elt, next, prev) {
-    nodes(elt, arr(next.nodes), elt.childNodes);
-    attrs(elt, next.attrs || 1, prev.attrs || 1);
-    props(elt, next.props || 1, prev.props || 1);
-    events(elt, next.events || 1, prev.events || 1);
-    return (elt.__spec = next, next.__ref = elt);
+    if (typeof next[1] === 'string') next[1] = {class: next[1]};
+    nodes(elt, arr(next[2]), elt.childNodes);
+    attrs(elt, next[1] || 1, prev[1] || 1);
+    props(elt, next[3] || 1, prev[3] || 1);
+    events(elt, next[4] || 1, prev[4] || 1);
+    return (elt.__spec = next, elt);
   }
 
   /* Update child nodes */
